@@ -1,0 +1,1 @@
+DOMAIN = "ldap_auth"

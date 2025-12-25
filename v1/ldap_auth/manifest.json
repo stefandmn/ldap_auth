@@ -1,0 +1,10 @@
+{
+  "domain": "ldap_auth",
+  "name": "LDAP Auth Helper (command_line)",
+  "version": "1.0.0",
+  "documentation": "https://www.home-assistant.io/docs/authentication/providers/",
+  "issue_tracker": "https://example.invalid/issues",
+  "codeowners": [],
+  "requirements": ["ldap3==2.9.1"],
+  "iot_class": "local_polling"
+}

@@ -1,0 +1,22 @@
+
+# https://www.home-assistant.io/docs/configuration/basic/
+homeassistant:
+  auth_providers:
+    - type: command_line
+      name: 'LDAP'
+      command: '/usr/local/bin/python3'
+      args: ['/config/python_scripts/ldap-auth/auth.py']
+      meta: true
+    - type: homeassistant
+
+
+# Add this block to /config/configuration.yaml (keep it plain YAML; no !secret/!include unless you implement resolution)
+ldap_auth:
+  server: "ldaps://example.com:636"
+  helperdn: "uid=integration,cn=users,dc=example,dc=com"
+  helperpass: "REPLACE_ME"
+  timeout: 3
+  basedn: "dc=example,dc=com"
+  attrs: "uid"
+  base_filter: "(&(objectClass=person))"
+  display_attr: "displayName"
