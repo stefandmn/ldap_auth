@@ -1,4 +1,4 @@
-# Home Assistant LDAP Auth – Three Versions (v0 / v1 / v2)
+# Home Assistant LDAP Auth – Options (v0 / v1 / v2)
 
 This repository contains three packaged variants of the same goal: allow Home Assistant to authenticate users against LDAP using the built-in **command_line** auth provider (which executes an external script and interprets the exit code).
 

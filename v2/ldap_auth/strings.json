@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "LDAP Auth",
+        "description": "Configure LDAP connection parameters used by the command_line auth script.",
+        "data": {
+          "server": "LDAP server URI (ldap:// or ldaps://)",
+          "helperdn": "Helper/service bind DN",
+          "helperpass": "Helper/service password",
+          "basedn": "Base DN for user search",
+          "attrs": "Username attribute (e.g. uid, sAMAccountName)",
+          "base_filter": "Base LDAP filter (combined with username filter)",
+          "display_attr": "Display name attribute (meta mode)",
+          "timeout": "Timeout (seconds)",
+          "verify_ssl": "Verify TLS certificates",
+          "use_starttls": "Use StartTLS (ldap:// only)"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "LDAP Auth options",
+        "description": "Edit LDAP parameters.",
+        "data": {
+          "server": "LDAP server URI (ldap:// or ldaps://)",
+          "helperdn": "Helper/service bind DN",
+          "helperpass": "Helper/service password",
+          "basedn": "Base DN for user search",
+          "attrs": "Username attribute",
+          "base_filter": "Base LDAP filter",
+          "display_attr": "Display name attribute",
+          "timeout": "Timeout (seconds)",
+          "verify_ssl": "Verify TLS certificates",
+          "use_starttls": "Use StartTLS (ldap:// only)"
+        }
+      }
+    }
+  }
+}
