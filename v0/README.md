@@ -1,20 +1,19 @@
-# ldap_auth (custom integration + command_line auth helper)
+# ldap_auth (python_scrips )
 
-This package is intended for **Home Assistant OS / Green / Supervised / Container** setups that use the built-in
+This package is designed for **Home Assistant OS / Green / Supervised / Container** setups that uses the built-in
 **command_line authentication provider**.
 
 Home Assistant executes a shell command to validate credentials. It passes two environment variables:
 `username` and `password`. Access is granted when the command exits with code `0`.
 
-This custom integration provides:
-- a stable file location for the helper script: `/config/custom_components/ldap_auth/auth.py`
-- automatic installation of the `ldap3` Python dependency via `manifest.json` (custom integrations must include
-  a `version` key).
+This simple integration provides:
+- a stable file location for the auth script: `/config/python_scripts/ldap_auth/auth.py` (includes all dependecies)
+- configuration for the provider and for ldap server directly within `configuration.yaml` - see it below.
 
 ## Installation
 
-1. Copy the folder `custom_components/ldap_auth/` into your Home Assistant config directory:
-   `/config/custom_components/ldap_auth/`
+1. Copy the folder `python_scripts/ldap_auth/` into your Home Assistant config directory:
+   `/config/python_scripts/ldap_auth/`
 
 2. Restart Home Assistant.
 
@@ -28,7 +27,7 @@ homeassistant:
     - type: command_line
       command: /usr/bin/python3
       args:
-        - /config/custom_components/ldap_auth/auth.py
+        - /config/python_scripts/ldap_auth/auth.py
       meta: true
     - type: homeassistant
 
@@ -45,9 +44,8 @@ ldap_auth:
 
 Notes:
 - `meta: true` enables returning display metadata (this script outputs `name = ...`).
-- If your Python path differs, adjust the `command` field accordingly.
-
-## Optional environment overrides
-
-- `HASS_CONFIG`: override the config directory (default `/config`)
-- `LDAP_AUTH_CONFIG`: override the full path to the YAML file to read (default `$HASS_CONFIG/configuration.yaml`)
+- If your Python path differs (in case you have a custom HAS setup), adjust the `command` field accordingly.
+- in case you have additional providers like `trusted_networks` you can add them before or after, 
+  depending by your needs
+- configure LDAP connections and related details (it was tested for standard LDAP server like ApacheDS)
+  but can be adapted for Active Directory also.

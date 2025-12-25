@@ -10,7 +10,7 @@ homeassistant:
     - type: homeassistant
 
 
-# Add this block to /config/configuration.yaml (keep it plain YAML; no !secret/!include unless you implement resolution)
+# Add this block to /config/configuration.yaml (keep it plain YAML)
 ldap_auth:
   server: "ldaps://example.com:636"
   helperdn: "uid=integration,cn=users,dc=example,dc=com"
