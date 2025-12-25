@@ -1,4 +1,4 @@
-# ldap_auth (python_scrips )
+# ldap_auth (python_scrips + command_line auth helper)
 
 This package is designed for **Home Assistant OS / Green / Supervised / Container** setups that uses the built-in
 **command_line authentication provider**.
@@ -12,8 +12,7 @@ This simple integration provides:
 
 ## Installation
 
-1. Copy the folder `python_scripts/ldap_auth/` into your Home Assistant config directory:
-   `/config/python_scripts/ldap_auth/`
+1. Copy the folder `ldap_auth/` into your Home Assistant config directory: `/config/python_scripts/`
 
 2. Restart Home Assistant.
 
