@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 import yaml  # Home Assistant already depends on PyYAML
 
-# Optional: allow bundling deps under custom_components/ldap_auth/libs
+# allow bundling deps under custom_components/ldap_auth/libs
 _HERE = Path(__file__).resolve().parent
 _LIBS_PATH = _HERE / "libs"
 if _LIBS_PATH.is_dir():
@@ -93,15 +93,9 @@ def main() -> int:
 
     server = Server(server_url, get_info=ALL, connect_timeout=timeout)
 
-    # 1) Bind with helper account
+    # Bind with helper account
     try:
-        conn = Connection(
-            server,
-            helperdn,
-            password=helperpass,
-            auto_bind=True,
-            raise_exceptions=True,
-        )
+        conn = Connection(server, helperdn, password=helperpass, auto_bind=True, raise_exceptions=True,)
     except Exception as exc:
         eprint(f"Initial LDAP bind failed: {exc}")
         return 1
@@ -137,15 +131,9 @@ def main() -> int:
     except Exception:
         pass
 
-    # 2) Bind with user DN and provided password
+    # Bind with user DN and provided password
     try:
-        user_conn = Connection(
-            server,
-            user_dn,
-            password=password,
-            auto_bind=True,
-            raise_exceptions=True,
-        )
+        user_conn = Connection(server, user_dn, password=password, auto_bind=True, raise_exceptions=True,)
     except Exception:
         eprint("Invalid credentials.")
         return 1

@@ -23,7 +23,7 @@ from .const import DOMAIN, SERVICE_SHOW_SNIPPET, NOTIFICATION_ID
 
 _LOGGER = logging.getLogger(__name__)
 
-SNIPPET_FILENAME = "ldap_auth_auth_providers.yaml"
+SNIPPET_FILENAME = "ldap_auth_providers.yaml"
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -50,18 +50,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 _LOGGER.warning("Failed writing snippet include file: %s", exc)
                 msg += f"\n\nWarning: could not write /config/{SNIPPET_FILENAME}: {exc}"
 
-        persistent_notification.async_create(
-            hass,
-            msg,
-            title="LDAP Auth setup",
-            notification_id=NOTIFICATION_ID,
-        )
+        persistent_notification.async_create(hass, msg, title="LDAP Auth Setup", notification_id=NOTIFICATION_ID,)
 
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_SHOW_SNIPPET,
-        _handle_show_snippet,
-    )
+    hass.services.async_register(DOMAIN, SERVICE_SHOW_SNIPPET, _handle_show_snippet,)
 
     # Best-effort: write the include file so the user can simply add a one-line include.
     try:
@@ -70,13 +61,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.debug("Could not write snippet include file on setup: %s", exc)
 
     # Always inform the user how to enable the provider.
-    persistent_notification.async_create(
-        hass,
-        _build_auth_provider_instructions(python_cmd="/usr/bin/python3"),
-        title="LDAP Auth Setup",
-        notification_id=NOTIFICATION_ID,
-    )
-
+    persistent_notification.async_create(hass, _build_auth_provider_instructions(python_cmd="/usr/bin/python3"), title="LDAP Auth Setup", notification_id=NOTIFICATION_ID,)
     return True
 
 
@@ -93,7 +78,7 @@ def _config_path(hass: HomeAssistant) -> Path:
 
 
 def _write_snippet_file(hass: HomeAssistant, *, python_cmd: str) -> None:
-    """Write /config/ldap_auth_auth_providers.yaml containing the auth_providers list."""
+    """Write /config/ldap_auth_providers.yaml containing the auth_providers list."""
     cfg_dir = _config_path(hass)
     file_path = cfg_dir / SNIPPET_FILENAME
     script_path = "/config/custom_components/ldap_auth/auth.py"

@@ -25,12 +25,18 @@ from typing import Any, Dict, Optional
 
 try:
     import yaml
-except Exception:  # noqa: BLE001
-    yaml = None  # type: ignore[assignment]
+except Exception:
+    yaml = None
+
+# allow bundling deps under custom_components/ldap_auth/libs
+_HERE = Path(__file__).resolve().parent
+_LIBS_PATH = _HERE / "libs"
+if _LIBS_PATH.is_dir():
+    sys.path.insert(0, str(_LIBS_PATH))
 
 try:
     from ldap3 import Connection, Server, Tls, ALL, SUBTREE
-except Exception as exc:  # noqa: BLE001
+except Exception as exc:
     print(f"[ldap_auth] Missing dependency ldap3: {exc}", file=sys.stderr)
     raise
 
@@ -97,10 +103,8 @@ def load_config() -> Dict[str, Any]:
     config_dir = _config_dir()
     cfg = _load_from_storage(config_dir) or _load_from_yaml(config_dir)
     if not cfg:
-        raise ValueError(
-            "No LDAP configuration found. Configure the LDAP Auth integration in the UI (Settings → Devices & services). "
-            "Optionally, provide a 'ldap_auth:' section in configuration.yaml."
-        )
+        raise ValueError("No LDAP configuration found. Configure the LDAP Auth integration in the UI (Settings → Devices & services). "
+            "Optionally, provide a 'ldap_auth:' section in configuration.yaml.")
     return cfg
 
 

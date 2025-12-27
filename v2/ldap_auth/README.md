@@ -16,10 +16,10 @@ Home Assistant does not allow integrations to register auth providers dynamicall
 **Option 1 (recommended): include file**
 ```yaml
 homeassistant:
-  auth_providers: !include ldap_auth_auth_providers.yaml
+  auth_providers: !include ldap_auth_providers.yaml
 ```
 
-The integration writes `/config/ldap_auth_auth_providers.yaml`.
+The integration writes `/config/ldap_auth_providers.yaml` file.
 
 **Option 2: inline**
 ```yaml

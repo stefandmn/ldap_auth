@@ -2,11 +2,11 @@ show_auth_provider_snippet:
   name: Show auth provider YAML snippet
   description: >
     Creates a persistent notification with the YAML required to enable the command_line auth provider.
-    Optionally writes /config/ldap_auth_auth_providers.yaml for use with !include.
+    Optionally writes /config/ldap_auth_providers.yaml for use with !include.
   fields:
     write_file:
       name: Write include file
-      description: Whether to write /config/ldap_auth_auth_providers.yaml
+      description: Whether to write /config/ldap_auth_providers.yaml
       required: false
       default: true
       selector:

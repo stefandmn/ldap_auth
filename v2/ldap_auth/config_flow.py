@@ -75,8 +75,6 @@ class LdapAuthOptionsFlow(config_entries.OptionsFlow):
         errors = {}
         defaults = dict(self._config_entry.data)
         defaults.update(self._config_entry.options or {})
-
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
-
         return self.async_show_form(step_id="init", data_schema=_schema(defaults), errors=errors)
