@@ -2,8 +2,9 @@
   "config": {
     "step": {
       "user": {
-        "title": "LDAP Auth",
-        "description": "Configure LDAP connection parameters used by the command_line auth script.",
+        "title": "LDAP Integration",
+        "description": "Configure LDAP connection parameters used by the command_line authentication script.",
+        "single_instance_allowed": "One single LDAP configuration instance is allowed",
         "data": {
           "server": "LDAP server URI (ldap:// or ldaps://)",
           "helperdn": "Helper/service bind DN",
@@ -14,7 +15,7 @@
           "display_attr": "Display name attribute (meta mode)",
           "timeout": "Timeout (seconds)",
           "verify_ssl": "Verify TLS certificates",
-          "use_starttls": "Use StartTLS (ldap:// only)"
+          "use_starttls": "Use StartTLS (ldap:// only)",
         }
       }
     }

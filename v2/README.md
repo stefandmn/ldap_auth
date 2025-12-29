@@ -1,24 +1,38 @@
-# ldap-auth (custom integration)
+# LDAP Auth (command_line) helper
 
-This custom integration is intentionally minimal. Its purpose is to provide a stable location to store
-third-party Python dependencies under:
+This custom integration provides a UI to store LDAP parameters (in `.storage`) and a helper script used by
+Home Assistant's built-in `command_line` auth provider.
 
-`custom_components/ldap_auth/libs/`
+## What you get
+- Configure LDAP settings in the UI: Settings → Devices & services → Add integration → **LDAP Auth**
+- The auth script lives at: `/config/custom_components/ldap_auth/auth.py`
+- A service to show the YAML snippet and (optionally) write an include file:
+  - `ldap_auth.show_auth_provider_snippet`
 
-Your `command_line` auth script can then add that directory to `sys.path` to import bundled libraries
-(e.g., `ldap3`, and optionally `PyYAML`).
+## Enabling LDAP login (one-time YAML step)
+Home Assistant does not allow integrations to register auth providers dynamically. Add one of the following to
+`configuration.yaml` and restart.
 
-## Where to put libraries
+**Option 1 (recommended): include file**
+```yaml
+homeassistant:
+  auth_providers: !include ldap_auth_providers.yaml
+```
 
-Create:
+The integration writes `/config/ldap_auth_providers.yaml` file.
 
-`custom_components/ldap_auth/libs/`
+**Option 2: inline**
+```yaml
+homeassistant:
+  auth_providers:
+    - type: command_line
+      name: 'LDAP Auth'
+      command: /usr/bin/python3
+      args:
+        - /config/custom_components/ldap_auth/auth.py
+      meta: true
+    - type: homeassistant
+```
 
-Then copy the installed package folders into that directory, for example:
+Adjust the python command path if is needed.
 
-- `ldap3/`
-- `pyasn1/`
-- `pyasn1_modules/`
-- `yaml/` (PyYAML) if you use YAML parsing
-
-This repository/zip intentionally excludes those dependencies.

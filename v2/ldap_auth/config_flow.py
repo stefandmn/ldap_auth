@@ -57,7 +57,7 @@ class LdapAuthConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
         if user_input is not None:
             # Store everything as data; options flow will allow edits too.
-            return self.async_create_entry(title="LDAP Auth", data=user_input)
+            return self.async_create_entry(title="LDAP Integration", data=user_input)
 
         return self.async_show_form(step_id="user", data_schema=_schema({}), errors=errors)
 

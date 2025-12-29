@@ -46,7 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             try:
                 _write_snippet_file(hass, python_cmd=python_cmd)
                 msg += f"\n\nSnippet file written: /config/{SNIPPET_FILENAME}"
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:  
                 _LOGGER.warning("Failed writing snippet include file: %s", exc)
                 msg += f"\n\nWarning: could not write /config/{SNIPPET_FILENAME}: {exc}"
 
@@ -57,7 +57,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Best-effort: write the include file so the user can simply add a one-line include.
     try:
         _write_snippet_file(hass, python_cmd="/usr/bin/python3")
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         _LOGGER.debug("Could not write snippet include file on setup: %s", exc)
 
     # Always inform the user how to enable the provider.
@@ -84,6 +84,7 @@ def _write_snippet_file(hass: HomeAssistant, *, python_cmd: str) -> None:
     script_path = "/config/custom_components/ldap_auth/auth.py"
     content = (
         "- type: command_line\n"
+        "  name: 'LDAP Authentication'\n"
         f"  command: {python_cmd}\n"
         "  args:\n"
         f"    - {script_path}\n"
@@ -97,7 +98,7 @@ def _build_auth_provider_instructions(*, python_cmd: str) -> str:
     script_path = "/config/custom_components/ldap_auth/auth.py"
     include_file = f"/config/{SNIPPET_FILENAME}"
     return (
-        "Home Assistant cannot add auth providers automatically. To enable LDAP login, add ONE of the options below and restart:\n\n"
+        "Home Assistant cannot add authentication providers automatically. To enable LDAP login, add ONE of the options below and restart:\n\n"
         "Option 1 (recommended): include a generated file (minimal YAML edit)\n"
         "homeassistant:\n"
         f"  auth_providers: !include {SNIPPET_FILENAME}\n\n"
@@ -106,6 +107,7 @@ def _build_auth_provider_instructions(*, python_cmd: str) -> str:
         "homeassistant:\n"
         "  auth_providers:\n"
         "    - type: command_line\n"
+        "       name: 'LDAP Authentication'\n"
         f"      command: {python_cmd}\n"
         "      args:\n"
         f"        - {script_path}\n"
