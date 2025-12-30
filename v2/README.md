@@ -26,7 +26,7 @@ The integration writes `/config/ldap_auth_providers.yaml` file.
 homeassistant:
   auth_providers:
     - type: command_line
-      name: 'LDAP Auth'
+      name: 'LDAP Authentication'
       command: /usr/bin/python3
       args:
         - /config/custom_components/ldap_auth/auth.py

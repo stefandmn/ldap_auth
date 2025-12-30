@@ -1,29 +1,10 @@
 {
   "config": {
+    "abort": {
+      "single_instance_allowed": "Only one LDAP Integration configuration is allowed."
+    },
     "step": {
       "user": {
-        "title": "LDAP Integration",
-        "description": "Configure LDAP connection parameters used by the command_line authentication script.",
-        "data": {
-          "server": "LDAP server URI (ldap:// or ldaps://)",
-          "helperdn": "Helper/service bind DN",
-          "helperpass": "Helper/service password",
-          "basedn": "Base DN for user search",
-          "attrs": "Username attribute (e.g. uid, sAMAccountName)",
-          "base_filter": "Base LDAP filter (combined with username filter)",
-          "display_attr": "Display name attribute (meta mode)",
-          "timeout": "Timeout (seconds)",
-          "verify_ssl": "Verify TLS certificates",
-          "use_starttls": "Use StartTLS (ldap:// only)"
-        }
-      }
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "title": "LDAP Integration",
-        "description": "Edit LDAP connection parameters used by the command_line authentication script.",
         "data": {
           "server": "LDAP server URI (ldap:// or ldaps://)",
           "helperdn": "Helper/service bind DN",
@@ -34,7 +15,28 @@
           "display_attr": "Display name attribute",
           "timeout": "Timeout (seconds)",
           "verify_ssl": "Verify TLS certificates",
-          "use_starttls": "Use StartTLS (ldap:// only)"
+          "use_starttls": "Use StartTLS"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to LDAP server"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "server": "LDAP server URI (ldap:// or ldaps://)",
+          "helperdn": "Helper/service bind DN",
+          "helperpass": "Helper/service password",
+          "basedn": "Base DN for user search",
+          "attrs": "Username attribute",
+          "base_filter": "Base LDAP filter",
+          "display_attr": "Display name attribute",
+          "timeout": "Timeout (seconds)",
+          "verify_ssl": "Verify TLS certificates",
+          "use_starttls": "Use StartTLS"
         }
       }
     }

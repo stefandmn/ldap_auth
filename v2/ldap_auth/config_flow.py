@@ -1,4 +1,5 @@
-"""Config flow for ldap_auth.
+"""
+Config flow for ldap_auth.
 
 Stores LDAP parameters in config entries (.storage) so they can be edited in the UI.
 """
@@ -51,14 +52,11 @@ class LdapAuthConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
+        errors = {}
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_allowed")
-
-        errors = {}
         if user_input is not None:
-            # Store everything as data; options flow will allow edits too.
             return self.async_create_entry(title="LDAP Integration", data=user_input)
-
         return self.async_show_form(step_id="user", data_schema=_schema({}), errors=errors)
 
     @staticmethod
