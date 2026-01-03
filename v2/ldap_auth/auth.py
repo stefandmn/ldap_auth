@@ -6,8 +6,9 @@ Home Assistant's command_line auth provider executes this script in a separate p
 
 Exit codes:
   0  success
-  1  invalid credentials / user not found
+  1  invalid credentials
   2  configuration error
+  3  connection error
   5  LDAP error / other runtime error
 
 If meta: true is set in the command_line auth provider, Home Assistant parses stdout for metadata.
@@ -28,20 +29,8 @@ try:
 except Exception:
     yaml = None
 
-# allow bundling deps under custom_components/ldap_auth/libs
-_HERE = Path(__file__).resolve().parent
-_LIBS_PATH = _HERE / "libs"
-if _LIBS_PATH.is_dir():
-    sys.path.insert(0, str(_LIBS_PATH))
-
-try:
-    from ldap3 import Connection, Server, Tls, ALL, SUBTREE
-except Exception as exc:
-    print(f"[ldap_auth] Missing dependency ldap3: {exc}", file=sys.stderr)
-    raise
-
-
-DOMAIN = "ldap_auth"
+from .const import DOMAIN
+from .ldap import InvalidConfiguration, InvalidConnection, InvalidAuthentication, InvalidOperation, LDAP
 
 
 def _get_env_cred() -> tuple[str, str]:
@@ -56,8 +45,7 @@ def _config_dir() -> Path:
         os.environ.get("HASS_CONFIG")
         or os.environ.get("HASS_CONFIG_DIR")
         or os.environ.get("HOMEASSISTANT_CONFIG")
-        or "/config"
-    )
+        or "/config")
 
 
 def _load_from_storage(config_dir: Path) -> Optional[Dict[str, Any]]:
@@ -91,7 +79,8 @@ def _load_from_yaml(config_dir: Path) -> Optional[Dict[str, Any]]:
         return None
     try:
         content = yaml.safe_load(cfg_file.read_text(encoding="utf-8")) or {}
-    except Exception:  # noqa: BLE001
+    except Exception as errex:
+        print("[ldap_auth] Error reading {cfg_file} configuration file: {errex}", file=sys.stderr)
         return None
     section = content.get(DOMAIN)
     if isinstance(section, dict):
@@ -104,7 +93,7 @@ def load_config() -> Dict[str, Any]:
     cfg = _load_from_storage(config_dir) or _load_from_yaml(config_dir)
     if not cfg:
         raise ValueError("No LDAP configuration found. Configure the LDAP Auth integration in the UI (Settings → Devices & services). "
-            "Optionally, provide a 'ldap_auth:' section in configuration.yaml.")
+            "Optionally, provide a 'ldap_auth:' section in configuration.yaml")
     return cfg
 
 
@@ -122,7 +111,7 @@ def _bool(v: Any, default: bool) -> bool:
 def _int(v: Any, default: int) -> int:
     try:
         return int(v)
-    except Exception:  # noqa: BLE001
+    except Exception:
         return default
 
 
@@ -134,8 +123,8 @@ def main() -> int:
 
     try:
         cfg = load_config()
-    except Exception as exc:  # noqa: BLE001
-        print(f"[ldap_auth] Config error: {exc}", file=sys.stderr)
+    except Exception as exc:
+        print(f"[ldap_auth] Configuration error: {exc}", file=sys.stderr)
         return 2
 
     server_uri = str(cfg.get("server", "")).strip()
@@ -149,67 +138,25 @@ def main() -> int:
     verify_ssl = _bool(cfg.get("verify_ssl"), True)
     use_starttls = _bool(cfg.get("use_starttls"), False)
 
-    if not server_uri or not basedn:
-        print("[ldap_auth] 'server' and 'basedn' are required", file=sys.stderr)
-        return 2
-
-    # Build filter: (&(base_filter)(attr=username))
-    attr_key = attrs.split(",")[0].strip()
-    safe_username = username.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
-    user_filter = f"({attr_key}={safe_username})"
-    search_filter = f"(&{base_filter}{user_filter})"
-
     try:
-        tls = None
-        if server_uri.lower().startswith("ldaps://") or (server_uri.lower().startswith("ldap://") and verify_ssl):
-            tls = Tls(validate=ssl.CERT_REQUIRED if verify_ssl else ssl.CERT_NONE)  # type: ignore[name-defined]
-        server = Server(server_uri, get_info=ALL, connect_timeout=timeout, tls=tls)  # type: ignore[arg-type]
-
-        # If helper DN is provided, search with helper bind; otherwise attempt direct bind with user DN discovered by anonymous search.
-        # Anonymous search is often disabled; helper bind is recommended.
-        if helperdn:
-            with Connection(server, user=helperdn, password=helperpass, auto_bind=True, receive_timeout=timeout) as c:
-                if use_starttls:
-                    try:
-                        c.start_tls()
-                    except Exception:
-                        pass
-                if not c.search(search_base=basedn, search_filter=search_filter, search_scope=SUBTREE, attributes=[display_attr, attr_key]):
-                    return 1
-                if not c.entries:
-                    return 1
-                user_dn = c.entries[0].entry_dn
-                display_val = None
-                try:
-                    display_val = c.entries[0][display_attr].value
-                except Exception:
-                    display_val = None
-
-            # Now bind as user to validate password
-            with Connection(server, user=user_dn, password=password, auto_bind=True, receive_timeout=timeout) as _c2:
-                pass
-
-            if display_val:
-                print(f"name = {display_val}")
-            return 0
-
-        # No helper DN: try to bind directly using username as DN (rare) or UPN; if that fails, deny.
-        with Connection(server, user=username, password=password, auto_bind=True, receive_timeout=timeout) as c:
-            if use_starttls:
-                try:
-                    c.start_tls()
-                except Exception:
-                    pass
+        ldap = LDAP(server_uri=server_uri, base_dn=basedn, base_filter=base_filter, binding_user=helperdn, binding_password=helperpass, verify_ssl=verify_ssl, use_starttls=use_starttls, timeout=timeout)
+        user_attr = attrs.split(",")[0].strip()
+        safe_username = username.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+        ldap.login(safe_username, password, user_attr, display_attr)
         return 0
-
-    except Exception as exc:  # noqa: BLE001
-        # Avoid leaking credentials; include only error class/message.
-        print(f"[ldap_auth] LDAP error: {exc}", file=sys.stderr)
+    except InvalidAuthentication as auth:
+        print(f"[ldap_auth] invalid authentication: {str(auth)}", file=sys.stderr)
+        return 1
+    except InvalidConfiguration as conf:
+        print(f"[ldap_auth] invalid configuration: {str(conf)}", file=sys.stderr)
+        return 2
+    except InvalidConnection as conn:
+        print(f"[ldap_auth] invalid connection: {str(conn)}", file=sys.stderr)
+        return 3
+    except InvalidOperation as ops:
+        print(f"[ldap_auth] invalid operation: {str(ops)}", file=sys.stderr)
         return 5
 
 
 if __name__ == "__main__":
-    # Import ssl lazily because we only need it for TLS validation flags.
-    import ssl  # noqa: E402
-
     raise SystemExit(main())

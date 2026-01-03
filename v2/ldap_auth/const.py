@@ -1,6 +1,7 @@
 """Constants for ldap_auth."""
 
 DOMAIN = "ldap_auth"
+CCDPATH = "/config/custom_components/ldap_auth"
 
 # Config keys
 CONF_SERVER = "server"
@@ -22,5 +23,5 @@ DEFAULT_VERIFY_SSL = True
 DEFAULT_USE_STARTTLS = False
 
 # Services / notifications
-SERVICE_SHOW_SNIPPET = "show_auth_provider_snippet"
+SERVICE_SHOW_INCLUDE = "show_auth_provider_include"
 NOTIFICATION_ID = "ldap_auth_setup"

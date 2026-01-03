@@ -7,8 +7,8 @@
       "user": {
         "data": {
           "server": "LDAP server URI (ldap:// or ldaps://)",
-          "helperdn": "Helper/service bind DN",
-          "helperpass": "Helper/service password",
+          "helperdn": "Service bind DN",
+          "helperpass": "Service password",
           "basedn": "Base DN for user search",
           "attrs": "Username attribute",
           "base_filter": "Base LDAP filter",
@@ -20,7 +20,10 @@
       }
     },
     "error": {
-      "cannot_connect": "Cannot connect to LDAP server"
+      "cannot_connect": "Cannot connect to LDAP server",
+      "invalid_auth": "Invalid user credentials or binding DN/password",
+      "invalid_config": "Invalid configuration, missing attributes aor parameters",
+      "invalid_operation": "Invalid LDAP operation"
     }
   },
   "options": {
@@ -28,8 +31,8 @@
       "init": {
         "data": {
           "server": "LDAP server URI (ldap:// or ldaps://)",
-          "helperdn": "Helper/service bind DN",
-          "helperpass": "Helper/service password",
+          "helperdn": "Service bind DN",
+          "helperpass": "Service password",
           "basedn": "Base DN for user search",
           "attrs": "Username attribute",
           "base_filter": "Base LDAP filter",

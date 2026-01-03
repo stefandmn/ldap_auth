@@ -10,6 +10,8 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 
+from .ldap import InvalidConnection, InvalidConfiguration, InvalidAuthentication, InvalidOperation, LDAP
+
 from .const import (
     DOMAIN,
     CONF_SERVER,
@@ -29,6 +31,13 @@ from .const import (
     DEFAULT_VERIFY_SSL,
     DEFAULT_USE_STARTTLS,
 )
+
+
+def _validate_ldap(data: dict):
+    ldap = LDAP(server_uri=data["server"], base_dn=data["basedn"], base_filter=data["base_filter"], 
+                binding_user=data["helperdn"], binding_password=data["helperpass"], 
+                verify_ssl=data["verify_ssl"], use_starttls=data["use_starttls"], timeout=data["timeout"])
+    ldap.connect()
 
 
 def _schema(defaults: dict) -> vol.Schema:
@@ -56,8 +65,20 @@ class LdapAuthConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_allowed")
         if user_input is not None:
-            return self.async_create_entry(title="LDAP Integration", data=user_input)
-        return self.async_show_form(step_id="user", data_schema=_schema({}), errors=errors)
+            try:
+                # Validation Hook: Uses executor job to prevent UI freeze
+                await self.hass.async_add_executor_job(_validate_ldap, user_input)
+            except InvalidAuthentication:
+                errors["base"] = "invalid_auth"
+            except InvalidConfiguration:
+                errors["base"] = "invalid_config"
+            except InvalidConnection:
+                errors["base"] = "cannot_connect"
+            except InvalidOperation:
+                errors["base"] = "invalid_operation"
+            else:
+                return self.async_create_entry(title="LDAP Integration", data=user_input)
+        return self.async_show_form(step_id="user", data_schema=_schema(user_input or {}), errors=errors)
 
     @staticmethod
     @callback
@@ -66,13 +87,25 @@ class LdapAuthConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class LdapAuthOptionsFlow(config_entries.OptionsFlow):
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+    def __init__(self, config_entry: config_entries.ConfigEntry):
         self._config_entry = config_entry
+        self.hass = config_entry.hass
 
     async def async_step_init(self, user_input=None):
         errors = {}
         defaults = dict(self._config_entry.data)
         defaults.update(self._config_entry.options or {})
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            try:
+                await self.hass.async_add_executor_job(_validate_ldap, user_input)
+            except InvalidAuthentication:
+                errors["base"] = "invalid_auth"
+            except InvalidConfiguration:
+                errors["base"] = "invalid_config"
+            except InvalidConnection:
+                errors["base"] = "cannot_connect"
+            except InvalidOperation:
+                errors["base"] = "invalid_operation"
+            else:
+                return self.async_create_entry(title="", data=user_input)
         return self.async_show_form(step_id="init", data_schema=_schema(defaults), errors=errors)

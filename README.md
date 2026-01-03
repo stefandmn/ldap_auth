@@ -73,7 +73,7 @@ Because Home Assistant loads `auth_providers` at startup and does not expose a s
   - Options Flow (edit LDAP parameters in UI)
 - LDAP settings stored in `.storage` (not `configuration.yaml`)
 - Helper behavior: generates `/config/ldap_auth_providers.yaml` (or similarly named include file)
-- Persistent notification and/or a service to show the required auth provider snippet
+- Persistent notification and/or a service to show the required auth provider include file
 
 ### Pros
 - LDAP parameters are managed in UI (no YAML edits for LDAP settings)
@@ -81,7 +81,7 @@ Because Home Assistant loads `auth_providers` at startup and does not expose a s
 - Include-file generation reduces copy/paste errors
 
 ### Cons
-- You still must add the `auth_providers` include (or snippet) to `configuration.yaml` once
+- You still must add the `auth_providers` include to `configuration.yaml` once
 - Auth provider changes only take effect after restart (Home Assistant behavior)
 
 ### Typical setup (recommended on HA Green)

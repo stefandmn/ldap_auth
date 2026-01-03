@@ -1,13 +1,16 @@
 {
   "config": {
+    "abort": {
+      "single_instance_allowed": "Only one LDAP Integration configuration is allowed."
+    },    
     "step": {
       "user": {
         "title": "LDAP Integration",
         "description": "Configure LDAP connection parameters used by the command_line authentication script.",
         "data": {
           "server": "LDAP server URI (ldap:// or ldaps://)",
-          "helperdn": "Helper/service bind DN",
-          "helperpass": "Helper/service password",
+          "helperdn": "Service bind DN",
+          "helperpass": "Service password",
           "basedn": "Base DN for user search",
           "attrs": "Username attribute (e.g. uid, sAMAccountName)",
           "base_filter": "Base LDAP filter (combined with username filter)",
@@ -17,6 +20,12 @@
           "use_starttls": "Use StartTLS (ldap:// only)"
         }
       }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to LDAP server",
+      "invalid_auth": "Invalid user credentials or binding DN/password",
+      "invalid_config": "Invalid configuration, missing attributes aor parameters",
+      "invalid_operation": "Invalid LDAP operation"
     }
   },
   "options": {
@@ -26,8 +35,8 @@
         "description": "Edit LDAP connection parameters used by the command_line authentication script.",
         "data": {
           "server": "LDAP server URI (ldap:// or ldaps://)",
-          "helperdn": "Helper/service bind DN",
-          "helperpass": "Helper/service password",
+          "helperdn": "Service bind DN",
+          "helperpass": "Service password",
           "basedn": "Base DN for user search",
           "attrs": "Username attribute",
           "base_filter": "Base LDAP filter",

@@ -2,7 +2,7 @@
 
 This integration provides:
 - UI configuration (config entry + options) for LDAP parameters stored in .storage
-- A helper service to show (and optionally write) the YAML snippet needed for the
+- A helper service to show (and optionally write) the YAML include needed for the
   built-in `command_line` auth provider.
 
 Note:
@@ -19,11 +19,13 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.components import persistent_notification
 from homeassistant.helpers.typing import ConfigType
 
-from .const import DOMAIN, SERVICE_SHOW_SNIPPET, NOTIFICATION_ID
+from .const import DOMAIN, CCDPATH, SERVICE_SHOW_INCLUDE, NOTIFICATION_ID
 
 _LOGGER = logging.getLogger(__name__)
 
-SNIPPET_FILENAME = "ldap_auth_providers.yaml"
+INCLUDE_FILENAME = "auth_providers.yaml"
+SERVICE_FILENAME = "auth.py"
+COMMAND_FILEPATH = "/usr/bin/python3"
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -37,38 +39,40 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN]["entry_id"] = entry.entry_id
 
-    async def _handle_show_snippet(call: ServiceCall) -> None:
+    async def _handle_show_include(call: ServiceCall) -> None:
         write_file = bool(call.data.get("write_file", True))
-        python_cmd = str(call.data.get("python_command", "/usr/bin/python3"))
-        msg = _build_auth_provider_instructions(python_cmd=python_cmd)
+        python_cmd = str(call.data.get("python_command", COMMAND_FILEPATH))
+        msg = _build_instructions(hass)
 
         if write_file:
             try:
-                _write_snippet_file(hass, python_cmd=python_cmd)
-                msg += f"\n\nSnippet file written: /config/{SNIPPET_FILENAME}"
+                _write_include_file(hass)
+                msg += f"\n\nInclude file written: {_config_path(hass)}/{INCLUDE_FILENAME}"
             except Exception as exc:  
-                _LOGGER.warning("Failed writing snippet include file: %s", exc)
-                msg += f"\n\nWarning: could not write /config/{SNIPPET_FILENAME}: {exc}"
+                _LOGGER.warning("Failed writing auth_provider include file: %s", exc)
+                msg += f"\n\nWarning: could not write {_config_path(hass)}/{INCLUDE_FILENAME}: {exc}"    
+        persistent_notification.async_create(hass, msg, title="LDAP Integration Setup", notification_id=NOTIFICATION_ID,)
 
-        persistent_notification.async_create(hass, msg, title="LDAP Integration", notification_id=NOTIFICATION_ID,)
+    # register configuration service
+    hass.services.async_register(DOMAIN, SERVICE_SHOW_INCLUDE, _handle_show_include,)
 
-    hass.services.async_register(DOMAIN, SERVICE_SHOW_SNIPPET, _handle_show_snippet,)
-
-    # Best-effort: write the include file so the user can simply add a one-line include.
+    # write the include file so the user can simply add a one-line include.
     try:
-        _write_snippet_file(hass, python_cmd="/usr/bin/python3")
+        created = _write_include_file(hass)
     except Exception as exc:
-        _LOGGER.debug("Could not write snippet include file on setup: %s", exc)
+        _LOGGER.debug("Could not write include file on setup: %s", exc)
+        created = False
 
-    # Always inform the user how to enable the provider.
-    persistent_notification.async_create(hass, _build_auth_provider_instructions(python_cmd="/usr/bin/python3"), title="LDAP Integration Setup", notification_id=NOTIFICATION_ID,)
+    # inform the user how to enable the provider if the file was created now.
+    if created:
+        persistent_notification.async_create(hass, _build_instructions(hass), title="LDAP Integration Setup", notification_id=NOTIFICATION_ID,)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    if hass.services.has_service(DOMAIN, SERVICE_SHOW_SNIPPET):
-        hass.services.async_remove(DOMAIN, SERVICE_SHOW_SNIPPET)
+    if hass.services.has_service(DOMAIN, SERVICE_SHOW_INCLUDE):
+        hass.services.async_remove(DOMAIN, SERVICE_SHOW_INCLUDE)
     return True
 
 
@@ -77,38 +81,41 @@ def _config_path(hass: HomeAssistant) -> Path:
     return Path(hass.config.path())
 
 
-def _write_snippet_file(hass: HomeAssistant, *, python_cmd: str) -> None:
-    """Write /config/ldap_auth_providers.yaml containing the auth_providers list."""
+def _write_include_file(hass: HomeAssistant) -> bool:
+    """Write /config/auth_providers.yaml containing the auth_providers list."""
     cfg_dir = _config_path(hass)
-    file_path = cfg_dir / SNIPPET_FILENAME
-    script_path = "/config/custom_components/ldap_auth/auth.py"
+    file_path = cfg_dir / INCLUDE_FILENAME
+    if file_path.exists():
+        return False
+    script_path = Path(CCDPATH) / SERVICE_FILENAME
     content = (
         "- type: command_line\n"
         "  name: 'LDAP Authentication'\n"
-        f"  command: {python_cmd}\n"
+        f"  command: {COMMAND_FILEPATH}\n"
         "  args:\n"
         f"    - {script_path}\n"
         "  meta: true\n"
         "- type: homeassistant\n"
     )
     file_path.write_text(content, encoding="utf-8")
+    return True
 
 
-def _build_auth_provider_instructions(*, python_cmd: str) -> str:
-    script_path = "/config/custom_components/ldap_auth/auth.py"
-    include_file = f"/config/{SNIPPET_FILENAME}"
+def _build_instructions(hass: HomeAssistant) -> str:
+    script_path = f"{CCDPATH}/{SERVICE_FILENAME}"
+    include_file = f"{_config_path(hass)}/{INCLUDE_FILENAME}"
     return (
         "Home Assistant cannot add authentication providers automatically. To enable LDAP login, add ONE of the options below and restart:\n\n"
         "Option 1 (recommended): include a generated file (minimal YAML edit)\n"
         "homeassistant:\n"
-        f"  auth_providers: !include {SNIPPET_FILENAME}\n\n"
+        f"  auth_providers: !include {INCLUDE_FILENAME}\n\n"
         f"This integration writes the include file to: {include_file}\n\n"
-        "Option 2: inline configuration\n"
+        "Option 2 (manual config): inline configuration, in case you want to combine it with your custom providers\n"
         "homeassistant:\n"
         "  auth_providers:\n"
         "    - type: command_line\n"
         "       name: 'LDAP Authentication'\n"
-        f"      command: {python_cmd}\n"
+        f"      command: {COMMAND_FILEPATH}\n"
         "      args:\n"
         f"        - {script_path}\n"
         "      meta: true\n"
