@@ -1,7 +1,7 @@
 {
   "domain": "ldap_auth",
   "name": "LDAP Auth Helper",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "documentation": "https://www.home-assistant.io/docs/authentication/providers/",
   "issue_tracker": "https://github.com/stefandmn/ldap_auth/issues",
   "codeowners": ["@stefandmn"],

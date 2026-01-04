@@ -9,8 +9,11 @@ from __future__ import annotations
 import os
 import ssl
 import sys
+import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
+
+_LOGGER = logging.getLogger(__name__)
 
 # allow bundling deps (ldap3) under custom_components/ldap_auth/libs
 _HERE = Path(__file__).resolve().parent
@@ -21,7 +24,7 @@ if _LIBS_PATH.is_dir():
 try:
     from ldap3 import Connection, Server, Tls, ALL, SUBTREE
 except Exception as exc:
-    print(f"[ldap_auth] Missing dependency ldap3: {exc}", file=sys.stderr)
+    _LOGGER.fatal(f"[ldap_auth] Missing dependency ldap3: {str(exc)}")
     raise
 
 

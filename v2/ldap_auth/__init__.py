@@ -20,12 +20,13 @@ from homeassistant.components import persistent_notification
 from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN, CCDPATH, SERVICE_SHOW_INCLUDE, NOTIFICATION_ID
+from .ldap import InvalidConfiguration, InvalidConnection, InvalidAuthentication, InvalidOperation, LDAP
 
 _LOGGER = logging.getLogger(__name__)
 
 INCLUDE_FILENAME = "auth_providers.yaml"
 SERVICE_FILENAME = "auth.py"
-COMMAND_FILEPATH = "/usr/bin/python3"
+COMMAND_FILEPATH = "/usr/local/bin/python3"
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:

@@ -6,9 +6,10 @@ Home Assistant's command_line auth provider executes this script in a separate p
 
 Exit codes:
   0  success
-  1  invalid credentials
-  2  configuration error
-  3  connection error
+  1  invalid binding credentials
+  2  invalid user credentials
+  3  configuration error
+  4  connection error
   5  LDAP error / other runtime error
 
 If meta: true is set in the command_line auth provider, Home Assistant parses stdout for metadata.
@@ -20,7 +21,7 @@ from __future__ import annotations
 
 import json
 import os
-import sys
+import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -29,9 +30,11 @@ try:
 except Exception:
     yaml = None
 
-from .const import DOMAIN
-from .ldap import InvalidConfiguration, InvalidConnection, InvalidAuthentication, InvalidOperation, LDAP
+from const import DOMAIN
+from ldap import InvalidConfiguration, InvalidConnection, InvalidAuthentication, InvalidOperation, LDAP
 
+
+_LOGGER = logging.getLogger(__name__)
 
 def _get_env_cred() -> tuple[str, str]:
     username = os.environ.get("username") or os.environ.get("USERNAME") or ""
@@ -54,9 +57,8 @@ def _load_from_storage(config_dir: Path) -> Optional[Dict[str, Any]]:
         return None
     try:
         raw = json.loads(storage_file.read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001
+    except Exception:
         return None
-
     entries = raw.get("data", {}).get("entries", [])
     for e in entries:
         if e.get("domain") != DOMAIN:
@@ -80,7 +82,7 @@ def _load_from_yaml(config_dir: Path) -> Optional[Dict[str, Any]]:
     try:
         content = yaml.safe_load(cfg_file.read_text(encoding="utf-8")) or {}
     except Exception as errex:
-        print("[ldap_auth] Error reading {cfg_file} configuration file: {errex}", file=sys.stderr)
+        _LOGGER.warning(f"[ldap_auth] Error reading {cfg_file} configuration file: {str(errex)}")
         return None
     section = content.get(DOMAIN)
     if isinstance(section, dict):
@@ -118,14 +120,14 @@ def _int(v: Any, default: int) -> int:
 def main() -> int:
     username, password = _get_env_cred()
     if not username or not password:
-        print("[ldap_auth] Missing username/password env vars", file=sys.stderr)
+        _LOGGER.fatal("[ldap_auth] Missing username/password env vars")
         return 2
 
     try:
         cfg = load_config()
     except Exception as exc:
-        print(f"[ldap_auth] Configuration error: {exc}", file=sys.stderr)
-        return 2
+        _LOGGER.fatal(f"[ldap_auth] Error reading LDAP configuration: {str(exc)}")
+        return 3
 
     server_uri = str(cfg.get("server", "")).strip()
     helperdn = str(cfg.get("helperdn", "")).strip()
@@ -138,24 +140,45 @@ def main() -> int:
     verify_ssl = _bool(cfg.get("verify_ssl"), True)
     use_starttls = _bool(cfg.get("use_starttls"), False)
 
+    test = 0
+    note = None
+    ldap = None
+
     try:
         ldap = LDAP(server_uri=server_uri, base_dn=basedn, base_filter=base_filter, binding_user=helperdn, binding_password=helperpass, verify_ssl=verify_ssl, use_starttls=use_starttls, timeout=timeout)
-        user_attr = attrs.split(",")[0].strip()
-        safe_username = username.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
-        ldap.login(safe_username, password, user_attr, display_attr)
-        return 0
     except InvalidAuthentication as auth:
-        print(f"[ldap_auth] invalid authentication: {str(auth)}", file=sys.stderr)
-        return 1
+        note = f"[ldap_auth] invalid authentication: {str(auth)}"
+        test = 1
     except InvalidConfiguration as conf:
-        print(f"[ldap_auth] invalid configuration: {str(conf)}", file=sys.stderr)
-        return 2
+        note = f"[ldap_auth] invalid configuration: {str(conf)}"
+        test = 3
     except InvalidConnection as conn:
-        print(f"[ldap_auth] invalid connection: {str(conn)}", file=sys.stderr)
-        return 3
-    except InvalidOperation as ops:
-        print(f"[ldap_auth] invalid operation: {str(ops)}", file=sys.stderr)
-        return 5
+        note = f"[ldap_auth] invalid connection: {str(conn)}"
+        test = 4
+    if test == 0:
+        try:
+            user_attr = attrs.split(",")[0].strip()
+            safe_username = username.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+            ldap.login(safe_username, password, user_attr, display_attr) # type: ignore
+            note = f"[ldap_auth] successful authentication: {safe_username}"
+            test = 0
+        except InvalidAuthentication as auth:
+            note = f"[ldap_auth] invalid authentication: {str(auth)}"
+            test = 2
+        except InvalidConfiguration as conf:
+            note = f"[ldap_auth] invalid configuration: {str(conf)}"
+            test = 3
+        except InvalidConnection as conn:
+            note = f"[ldap_auth] invalid connection: {str(conn)}"
+            test = 4
+        except InvalidOperation as ops:
+            note = f"[ldap_auth] invalid operation: {str(ops)}"
+            return 5
+    if test != 0:
+        _LOGGER.error(note)
+    else:
+        _LOGGER.warning(note)
+    return test
 
 
 if __name__ == "__main__":
