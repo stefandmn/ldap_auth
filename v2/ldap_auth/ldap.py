@@ -56,6 +56,7 @@ class LDAP():
     _use_starttls = False
     _verify_ssl = False
     _timeout = 10
+    _userdn = None
 
     def __init__(self, server_uri: str, base_dn: str, base_filter: str, binding_user: str, binding_password: str, verify_ssl=False, use_starttls=False, timeout=10):
         self._server_uri = server_uri
@@ -107,6 +108,8 @@ class LDAP():
                 raise InvalidAuthentication("Invalid binding options")
             else:
                 return self._connection.entries
+        except SystemExit as sysex:
+            raise InvalidOperation(str(sysex)) from None
         except Exception as exc:
             raise InvalidOperation(str(exc)) from exc
 
@@ -123,8 +126,9 @@ class LDAP():
     def login(self, userid, password, search_attr="uid", display_attr="displayName"):
         if not userid or not password:
             raise InvalidOperation("Missing username/password")
-        userdn = self.bind(userid, search_attr, display_attr)
+        if self._userdn is None or self._userdn.find(userid) == -1:
+            self._userdn = self.bind(userid, search_attr, display_attr)
         try:
-            Connection(self._server, user=userdn, password=password, auto_bind=True, receive_timeout=self._timeout)
+            Connection(self._server, user=self._userdn, password=password, auto_bind=True, receive_timeout=self._timeout)
         except Exception as exc:
             raise InvalidAuthentication(str(exc)) from exc

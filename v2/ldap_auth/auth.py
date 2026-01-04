@@ -120,13 +120,13 @@ def _int(v: Any, default: int) -> int:
 def main() -> int:
     username, password = _get_env_cred()
     if not username or not password:
-        _LOGGER.fatal("[ldap_auth] Missing username/password env vars")
+        _LOGGER.fatal("[ldap_auth] [2] - Missing username/password")
         return 2
 
     try:
         cfg = load_config()
     except Exception as exc:
-        _LOGGER.fatal(f"[ldap_auth] Error reading LDAP configuration: {str(exc)}")
+        _LOGGER.fatal(f"[ldap_auth] [3] - Error reading LDAP configuration: {str(exc)}")
         return 3
 
     server_uri = str(cfg.get("server", "")).strip()
@@ -144,40 +144,49 @@ def main() -> int:
     note = None
     ldap = None
 
+    user_attr = attrs.split(",")[0].strip()
+    safe_username = username.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+    
     try:
         ldap = LDAP(server_uri=server_uri, base_dn=basedn, base_filter=base_filter, binding_user=helperdn, binding_password=helperpass, verify_ssl=verify_ssl, use_starttls=use_starttls, timeout=timeout)
+        ldap.bind(safe_username, user_attr, display_attr)
     except InvalidAuthentication as auth:
-        note = f"[ldap_auth] invalid authentication: {str(auth)}"
+        note = f"invalid authentication: {str(auth)}"
         test = 1
     except InvalidConfiguration as conf:
-        note = f"[ldap_auth] invalid configuration: {str(conf)}"
+        note = f"invalid configuration: {str(conf)}"
         test = 3
     except InvalidConnection as conn:
-        note = f"[ldap_auth] invalid connection: {str(conn)}"
+        note = f"invalid connection: {str(conn)}"
         test = 4
+    except InvalidOperation as ops:
+        note = f"invalid operation: {str(ops)}"
+        test = 5    
     if test == 0:
         try:
-            user_attr = attrs.split(",")[0].strip()
-            safe_username = username.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
             ldap.login(safe_username, password, user_attr, display_attr) # type: ignore
-            note = f"[ldap_auth] successful authentication: {safe_username}"
+            note = f"successful authentication: {safe_username}"
             test = 0
         except InvalidAuthentication as auth:
-            note = f"[ldap_auth] invalid authentication: {str(auth)}"
+            note = f"invalid authentication: {str(auth)}"
             test = 2
         except InvalidConfiguration as conf:
-            note = f"[ldap_auth] invalid configuration: {str(conf)}"
+            note = f"invalid configuration: {str(conf)}"
             test = 3
         except InvalidConnection as conn:
-            note = f"[ldap_auth] invalid connection: {str(conn)}"
+            note = f"invalid connection: {str(conn)}"
             test = 4
         except InvalidOperation as ops:
-            note = f"[ldap_auth] invalid operation: {str(ops)}"
-            return 5
-    if test != 0:
-        _LOGGER.error(note)
+            note = f"invalid operation: {str(ops)}"
+            test = 5
+    if test == 0:
+       _LOGGER.info(f"[ldap_auth] [{test}] - {note}")
+       # After successful LDAP validation
+       print(f"name = {safe_username}")
+       # Optional: also set user group or local-only status
+       print("group = system-users")
     else:
-        _LOGGER.warning(note)
+        _LOGGER.error(f"[ldap_auth] [{test}] - {note}")
     return test
 
 
