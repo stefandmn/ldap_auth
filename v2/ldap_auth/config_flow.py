@@ -5,6 +5,7 @@ Stores LDAP parameters in config entries (.storage) so they can be edited in the
 """
 from __future__ import annotations
 
+import logging
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -32,6 +33,7 @@ from .const import (
     DEFAULT_USE_STARTTLS,
 )
 
+_LOGGER = logging.getLogger(__name__)
 
 def _validate_ldap(data: dict):
     ldap = LDAP(server_uri=data["server"], base_dn=data["basedn"], base_filter=data["base_filter"], 
@@ -68,14 +70,18 @@ class LdapAuthConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 # Validation Hook: Uses executor job to prevent UI freeze
                 await self.hass.async_add_executor_job(_validate_ldap, user_input)
-            except InvalidAuthentication:
+            except InvalidAuthentication as iauth:
                 errors["base"] = "invalid_auth"
-            except InvalidConfiguration:
+                _LOGGER.error(f"[ldap_auth] [1] - invalid authentication: {str(iauth)}")
+            except InvalidConfiguration as iconf:
                 errors["base"] = "invalid_config"
-            except InvalidConnection:
+                _LOGGER.error(f"[ldap_auth] [3] - invalid configuration: {str(iconf)}")
+            except InvalidConnection as iconn:
                 errors["base"] = "cannot_connect"
-            except InvalidOperation:
+                _LOGGER.error(f"[ldap_auth] [4] - invalid connection: {str(iconn)}")
+            except InvalidOperation as ioper:
                 errors["base"] = "invalid_operation"
+                _LOGGER.error(f"[ldap_auth] [5] - invalid operation: {str(ioper)}")
             else:
                 return self.async_create_entry(title="LDAP Integration", data=user_input)
         return self.async_show_form(step_id="user", data_schema=_schema(user_input or {}), errors=errors)
@@ -97,14 +103,18 @@ class LdapAuthOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             try:
                 await self.hass.async_add_executor_job(_validate_ldap, user_input)
-            except InvalidAuthentication:
+            except InvalidAuthentication as iauth:
                 errors["base"] = "invalid_auth"
-            except InvalidConfiguration:
+                _LOGGER.error(f"[ldap_auth] [1] - invalid authentication: {str(iauth)}")
+            except InvalidConfiguration as iconf:
                 errors["base"] = "invalid_config"
-            except InvalidConnection:
+                _LOGGER.error(f"[ldap_auth] [3] - invalid configuration: {str(iconf)}")
+            except InvalidConnection as iconn:
                 errors["base"] = "cannot_connect"
-            except InvalidOperation:
+                _LOGGER.error(f"[ldap_auth] [4] - invalid connection: {str(iconn)}")
+            except InvalidOperation as ioper:
                 errors["base"] = "invalid_operation"
+                _LOGGER.error(f"[ldap_auth] [5] - invalid operation: {str(ioper)}")
             else:
                 return self.async_create_entry(title="", data=user_input)
         return self.async_show_form(step_id="init", data_schema=_schema(defaults), errors=errors)
